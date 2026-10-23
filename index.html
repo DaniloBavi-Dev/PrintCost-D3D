@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrintCost D3D - Calculadora & Gestão de Impressão 3D</title>
+  <link rel="icon" type="image/x-icon" href="PrintCost3D.ico">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-box">
+          <img id="app-logo-img" src="logo.png" alt="PrintCost D3D Logo" onerror="this.style.display='none'; document.getElementById('app-logo-fallback').style.display='flex';">
+          <div id="app-logo-fallback" class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1>PrintCost D3D</h1>
+          <p class="subtitle">Calculadora Profissional de Custos & Gestão 3D • 100% Offline</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-reset" class="btn-secondary" title="Limpar todos os campos para novo cálculo">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          Limpar
+        </button>
+        <button id="btn-save-defaults" class="btn-secondary" title="Salvar valores atuais como padrão">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Salvar Padrões
+        </button>
+        <button id="btn-theme-toggle" class="btn-icon" title="Alternar tema claro/escuro">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Navigation Tabs -->
+    <nav class="app-nav">
+      <button class="nav-tab active" data-tab="tab-calculator" id="nav-btn-calculator">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+          <line x1="16" y1="14" x2="16" y2="18"></line>
+          <path d="M16 10h.01"></path>
+          <path d="M12 10h.01"></path>
+          <path d="M8 10h.01"></path>
+          <path d="M12 14h.01"></path>
+          <path d="M8 14h.01"></path>
+          <path d="M12 18h.01"></path>
+          <path d="M8 18h.01"></path>
+        </svg>
+        Calculadora de Custos
+      </button>
+      <button class="nav-tab" data-tab="tab-reports" id="nav-btn-reports">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+          <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+        </svg>
+        Relatórios & Impressoras
+        <span class="tab-badge" id="tab-printers-count">0</span>
+      </button>
+      <button class="nav-tab nav-tab-donation" data-tab="tab-donation" id="nav-btn-donation">
+        <span class="donation-heart">💖</span>
+        Apoie o Projeto (PIX)
+      </button>
+    </nav>
+
+    <!-- TAB 1: CALCULATOR -->
+    <div id="tab-calculator" class="tab-pane active">
+      <main class="main-layout">
+        <!-- Left Column: Input Form -->
+        <section class="form-section">
+          <!-- Step 1: Printer Selection & Piece Info -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">1</span>
+                <h2>Impressora & Peça</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <!-- Printer Selector -->
+              <div class="form-group full-width">
+                <div class="label-with-action">
+                  <label for="select-printer">🖨️ Escolher Impressora</label>
+                  <button type="button" id="btn-quick-add-printer" class="btn-link">➕ Nova Impressora</button>
+                </div>
+                <div class="printer-select-row">
+                  <select id="select-printer">
+                    <!-- Populated dynamically from local DB -->
+                  </select>
+                  <button type="button" id="btn-edit-current-printer" class="btn-icon-small" title="Editar dados desta impressora">
+                    ⚙️
+                  </button>
+                </div>
+                <div class="printer-quick-info" id="printer-quick-info">
+                  Carregando dados da máquina...
+                </div>
+              </div>
+
+              <!-- Piece Name -->
+              <div class="form-group full-width">
+                <label for="piece-name">Nome da Peça / Projeto</label>
+                <input type="text" id="piece-name" placeholder="Ex: Suporte para Headphone, Vaso Voronoi..." value="">
+              </div>
+
+              <!-- Client Name -->
+              <div class="form-group full-width">
+                <label for="client-name">Cliente / Observação (Opcional)</label>
+                <input type="text" id="client-name" placeholder="Ex: João da Silva - Cor Preto Fosco">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Filament Section -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">2</span>
+                <h2>Filamento / Material</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="filament-material">Material do Filamento</label>
+                <select id="filament-material">
+                  <option value="PLA" selected>PLA</option>
+                  <option value="PLA Silk">PLA Silk</option>
+                  <option value="PETG">PETG</option>
+                  <option value="ABS">ABS</option>
+                  <option value="ASA">ASA</option>
+                  <option value="TPU (Flexível)">TPU (Flexível)</option>
+                  <option value="Nylon (PA)">Nylon (PA)</option>
+                  <option value="Fibra de Carbono (CF)">Fibra de Carbono (CF)</option>
+                  <option value="Resina Standard">Resina Standard</option>
+                  <option value="Resina Alta Resistência">Resina Alta Resistência</option>
+                  <option value="Outro">Outro (Personalizado)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filament-price">Preço do KG do Filamento (R$)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="filament-price" min="0" step="0.5" placeholder="0.00">
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label for="filament-used">Quantidade gasta na peça (informada no fatiador)</label>
+                <div class="input-suffix">
+                  <input type="number" id="filament-used" min="0" step="1" placeholder="0">
+                  <span class="suffix">gramas</span>
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label for="filament-loss">
+                  Margem para Falhas / Suportes e Purgas
+                  <span class="badge-tag" id="loss-badge">+0%</span>
+                </label>
+                <div class="range-container">
+                  <input type="range" id="filament-loss" min="0" max="25" step="1" value="0">
+                  <span class="range-val" id="filament-loss-val">0%</span>
+                </div>
+                <small class="hint">Cobre eventuais perdas, linhas de purga, brim e pequenos erros.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Energy Section -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">3</span>
+                <h2>Consumo de Energia Elétrica</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="kwh-price">Valor do kWh (conta de luz)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="kwh-price" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="printer-power">Potência média da impressora</label>
+                <div class="input-suffix">
+                  <input type="number" id="printer-power" min="10" step="10">
+                  <span class="suffix">Watts</span>
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label>Tempo total de impressão</label>
+                <div class="time-inputs">
+                  <div class="input-suffix">
+                    <input type="number" id="print-hours" min="0" step="1" placeholder="0">
+                    <span class="suffix">Horas</span>
+                  </div>
+                  <div class="input-suffix">
+                    <input type="number" id="print-minutes" min="0" max="59" step="1" placeholder="0">
+                    <span class="suffix">Minutos</span>
+                  </div>
+                </div>
+                <small class="hint" id="total-time-hint">Tempo total: 0h 0min (0 horas)</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Depreciation Section -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">4</span>
+                <h2>Depreciação & Manutenção</h2>
+              </div>
+              <div class="toggle-mode">
+                <label class="switch" for="depreciation-advanced">
+                  <input type="checkbox" id="depreciation-advanced">
+                  <span class="slider round"></span>
+                </label>
+                <label for="depreciation-advanced" class="switch-label clickable">Cálculo Avançado</label>
+              </div>
+            </div>
+
+            <!-- Simple mode -->
+            <div id="depreciation-simple-box" class="form-grid">
+              <div class="form-group full-width">
+                <label for="depreciation-rate">Custo de depreciação por hora</label>
+                <div class="input-both">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="depreciation-rate" min="0" step="0.01">
+                  <span class="suffix">/ hora</span>
+                </div>
+                <small class="hint">Preenchido automaticamente com base na impressora selecionada.</small>
+              </div>
+            </div>
+
+            <!-- Advanced calculation mode -->
+            <div id="depreciation-advanced-box" class="form-grid hidden">
+              <div class="form-group">
+                <label for="printer-cost">Valor da Impressora (R$)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="printer-cost" min="0" step="100">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="printer-lifespan">Vida Útil Estimada (Horas)</label>
+                <div class="input-suffix">
+                  <input type="number" id="printer-lifespan" min="500" step="500">
+                  <span class="suffix">horas</span>
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label for="maintenance-cost">Manutenção Periódica Estimada (R$)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="maintenance-cost" min="0" step="50">
+                </div>
+                <small class="hint" id="calc-deprec-hint">Taxa resultante: R$ 0,64 / hora de uso</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Packaging, Freight and Other Expenses -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">5</span>
+                <h2>Embalagem, Frete & Despesas Extras</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="packaging-cost">Valor da Embalagem</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="packaging-cost" min="0" step="0.5" placeholder="0.00">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="freight-cost">Valor do Frete / Envio</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="freight-cost" min="0" step="1" placeholder="0.00">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="other-expenses">Outras Despesas (cola, álcool, lixa)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="other-expenses" min="0" step="0.5" placeholder="0.00">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="labor-cost">Mão de Obra / Acabamento</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="labor-cost" min="0" step="1" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Commercial Simulator (Profit & Selling Price) -->
+          <div class="card highlight-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-badge">6</span>
+                <h2>Margem de Lucro & Preço de Venda</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <div class="label-with-output">
+                  <label for="profit-margin">Margem de Lucro Desejada</label>
+                  <div class="margin-input-box">
+                    <input type="number" id="profit-margin-number" min="0" max="1000" step="5" placeholder="0">
+                    <span>%</span>
+                  </div>
+                </div>
+                <div class="range-container">
+                  <input type="range" id="profit-margin" min="0" max="300" step="5" value="0">
+                </div>
+                <div class="margin-quick-buttons">
+                  <button type="button" class="btn-pill" data-margin="30">30%</button>
+                  <button type="button" class="btn-pill" data-margin="50">50%</button>
+                  <button type="button" class="btn-pill" data-margin="100">100% (2x Custo)</button>
+                  <button type="button" class="btn-pill" data-margin="150">150%</button>
+                  <button type="button" class="btn-pill" data-margin="200">200% (3x Custo)</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="card-fee">Taxa de Cartão / Gateway (%)</label>
+                <div class="input-suffix">
+                  <input type="number" id="card-fee" min="0" max="50" step="0.1" placeholder="0.00">
+                  <span class="suffix">%</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="custom-sell-price">Preço de Venda Fixado (Opcional)</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input type="number" id="custom-sell-price" min="0" step="0.5" placeholder="Automático">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Column: Results & Analytics -->
+        <section class="results-section">
+          <!-- Main Total Cost Card -->
+          <div class="result-hero-card">
+            <div class="hero-top">
+              <span class="hero-tag">Custo de Produção</span>
+              <span class="hero-date" id="current-date">Hoje</span>
+            </div>
+            <div class="hero-price">
+              <span class="currency">R$</span>
+              <span class="amount" id="total-cost-val">0,00</span>
+            </div>
+            <p class="hero-sub">Valor de custo real para fabricar esta peça</p>
+
+            <div class="hero-divider"></div>
+
+            <!-- Suggested Sell Price Box -->
+            <div class="sell-price-box">
+              <div class="sell-price-col">
+                <span class="label">Preço Sugerido de Venda:</span>
+                <span class="value-highlight" id="suggested-price-val">R$ 0,00</span>
+              </div>
+              <div class="sell-price-col text-right">
+                <span class="label">Lucro Líquido no Bolso:</span>
+                <span class="value-profit" id="net-profit-val">+ R$ 0,00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown Details -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Detalhamento dos Custos</h3>
+            </div>
+            
+            <div class="breakdown-list">
+              <!-- Filament Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-filament"></div>
+                  <div>
+                    <span class="item-title">Filamento / Insumo</span>
+                    <small id="detail-filament-desc">126g com perda (R$ 100/kg)</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-filament-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-filament-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- Energy Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-energy"></div>
+                  <div>
+                    <span class="item-title">Energia Elétrica</span>
+                    <small id="detail-energy-desc">0.975 kWh (6.5h a 150W)</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-energy-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-energy-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- Depreciation Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-deprec"></div>
+                  <div>
+                    <span class="item-title">Depreciação & Desgaste</span>
+                    <small id="detail-deprec-desc">6.5h de máquina rodando</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-deprec-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-deprec-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- Packaging Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-packaging"></div>
+                  <div>
+                    <span class="item-title">Embalagem</span>
+                    <small>Caixa, plástico bolha, fitas</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-packaging-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-packaging-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- Freight Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-freight"></div>
+                  <div>
+                    <span class="item-title">Frete / Envio</span>
+                    <small>Transporte ou entrega</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-freight-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-freight-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- Other & Labor Item -->
+              <div class="breakdown-item">
+                <div class="item-info">
+                  <div class="color-dot dot-other"></div>
+                  <div>
+                    <span class="item-title">Outras Despesas & Mão de Obra</span>
+                    <small>Acabamento e insumos</small>
+                  </div>
+                </div>
+                <div class="item-values">
+                  <span class="item-price" id="cost-other-val">R$ 0,00</span>
+                  <span class="item-pct" id="cost-other-pct">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="chart-wrapper">
+              <svg id="donut-chart" viewBox="0 0 200 200" class="donut-svg">
+                <circle cx="100" cy="100" r="70" class="donut-bg"></circle>
+              </svg>
+              <div class="chart-center-text">
+                <span class="center-total" id="chart-center-amount">R$ 0</span>
+                <span class="center-label">Custo Base</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons-grid">
+            <button id="btn-copy-summary" class="btn-primary full-width">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              Copiar Orçamento WhatsApp
+            </button>
+            <button id="btn-print" class="btn-secondary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Imprimir / Salvar PDF
+            </button>
+            <button id="btn-save-history" class="btn-primary btn-save-action" title="Salva esta peça no histórico e limpa os campos para o próximo cálculo">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 14 14"></polyline>
+              </svg>
+              Registrar Produção
+            </button>
+          </div>
+
+          <!-- History Card -->
+          <div class="card history-card" id="history-container">
+            <div class="card-header">
+              <h3>Histórico de Cálculos</h3>
+              <button id="btn-clear-history" class="btn-text">Limpar</button>
+            </div>
+            <div id="history-list" class="history-list">
+              <p class="empty-state">Nenhuma impressão registrada ainda. Clique em "Registrar Produção" para salvar no banco local.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- TAB 2: REPORTS & PRINTERS DASHBOARD -->
+    <div id="tab-reports" class="tab-pane">
+      <div class="reports-container">
+        <!-- Reports Header -->
+        <div class="reports-header-card">
+          <div>
+            <h2>📊 Painel de Controle do Parque de Impressão</h2>
+            <p class="reports-subtitle">Acompanhe horas trabalhadas, retorno sobre investimento (Payback) e lucro gerado por cada máquina.</p>
+          </div>
+          <button type="button" id="btn-open-add-printer" class="btn-primary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Impressora
+          </button>
+        </div>
+
+        <!-- Global KPI Metrics -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon icon-printers">🖨️</div>
+            <div>
+              <span class="kpi-label">Impressoras Ativas</span>
+              <span class="kpi-val" id="kpi-total-printers">0</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon icon-hours">⏱️</div>
+            <div>
+              <span class="kpi-label">Horas Totais em Operação</span>
+              <span class="kpi-val" id="kpi-total-hours">0h</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon icon-cost">🪙</div>
+            <div>
+              <span class="kpi-label">Custo Total Produzido</span>
+              <span class="kpi-val" id="kpi-total-cost">R$ 0,00</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon icon-profit">📈</div>
+            <div>
+              <span class="kpi-label">Lucro Líquido Acumulado</span>
+              <span class="kpi-val text-success" id="kpi-total-profit">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Printers Detailed Grid -->
+        <section class="reports-section-box">
+          <div class="section-title-row">
+            <h3>Minhas Impressoras 3D</h3>
+            <span class="badge-tag" id="printers-badge-total">0 máquinas cadastradas</span>
+          </div>
+
+          <div id="printers-cards-grid" class="printers-cards-grid">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </section>
+
+        <!-- Production History Table -->
+        <section class="reports-section-box">
+          <div class="section-title-row">
+            <h3>Histórico de Produção & Peças</h3>
+            <div class="table-filters">
+              <label for="filter-printer">Filtrar por Máquina:</label>
+              <select id="filter-printer">
+                <option value="all">Todas as Impressoras</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Impressora</th>
+                  <th>Peça / Cliente</th>
+                  <th>Tempo</th>
+                  <th>Peso</th>
+                  <th>Custo Prod.</th>
+                  <th>Valor Venda</th>
+                  <th>Lucro Líquido</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Offline Database & Backup Section -->
+        <section class="card backup-card">
+          <div class="card-header">
+            <h3>💾 Banco de Dados Local (100% Offline)</h3>
+          </div>
+          <p class="backup-desc">
+            Todos os seus dados estão salvos de forma privada no armazenamento local deste computador. Nenhum dado vai para a internet.
+            Você pode fazer backup ou transferir seus dados para outro computador a qualquer momento.
+          </p>
+          <div class="backup-actions">
+            <button type="button" id="btn-export-backup" class="btn-secondary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Exportar Backup (JSON)
+            </button>
+            <label for="input-import-backup" class="btn-secondary file-upload-btn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Restaurar Backup
+              <input type="file" id="input-import-backup" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- TAB 3: DONATION / APOIE O PROJETO -->
+    <div id="tab-donation" class="tab-pane">
+      <div class="donation-container">
+        <!-- Hero Donation Card -->
+        <div class="donation-hero-card">
+          <div class="donation-heart-icon">💖</div>
+          <h2>Apoie o Desenvolvimento do PrintCost D3D</h2>
+          <p class="donation-subtitle">Contribua para a manutenção e evolução contínua deste software independente.</p>
+        </div>
+
+        <!-- Custom Paragraph Message Card -->
+        <div class="card donation-message-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-badge">💬</span>
+              <h3>Mensagem do Desenvolvedor</h3>
+            </div>
+          </div>
+          
+          <div class="donation-paragraph">
+            <p class="donation-lead">🚀 <strong>Ajude este projeto a crescer! 🖨️</strong></p>
+            <p>Se este programa está ajudando você a calcular os custos, precificar melhor seus produtos e aumentar a lucratividade das suas impressões 3D, considere apoiar o projeto com qualquer valor através do PIX!</p>
+            <p>Sua contribuição será muito bem-vinda e ajudará em duas coisas muito importantes para mim: <strong>continuar desenvolvendo, atualizando e melhorando o programa</strong>, trazendo novas ferramentas, relatórios e recursos para toda a comunidade maker, e também dar um passo em direção à realização de um grande sonho: <strong>adquirir minha tão sonhada impressora 3D Bambu Lab A1 Mini! 💚</strong></p>
+            <p>Este projeto nasceu da vontade de criar uma ferramenta útil para quem trabalha ou está começando no mundo da impressão 3D. Cada contribuição, independentemente do valor, faz a diferença e me motiva a continuar investindo tempo e dedicação para tornar o programa cada vez melhor.</p>
+            <p>Se você puder contribuir, ficarei muito grato! E, se não puder, não tem problema: <strong>utilizar o programa, compartilhar com outros makers e ajudar o projeto a alcançar mais pessoas já é uma grande forma de apoio!</strong></p>
+            <p>Muito obrigado por fazer parte dessa comunidade e ajudar este projeto a crescer! 🤝</p>
+            <p class="donation-highlight-note">🎯 <em>Cada contribuição me deixa um pouco mais perto da minha Bambu Lab A1 Mini e ajuda este projeto a continuar evoluindo!</em></p>
+          </div>
+        </div>
+
+        <!-- PIX Payment Box -->
+        <div class="card donation-pix-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-badge">⚡</span>
+              <h3>Chave PIX Oficial</h3>
+            </div>
+          </div>
+
+          <div class="pix-content-grid">
+            <div class="pix-info-col">
+              <p class="pix-hint">Chave PIX (E-mail):</p>
+              <div class="pix-key-display-row">
+                <input type="text" id="display-pix-key" value="danilobavi.dev@gmail.com" readonly class="pix-key-input">
+                <button type="button" id="btn-copy-pix" class="btn-primary">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Copiar Chave PIX
+                </button>
+              </div>
+
+              <div class="pix-tags">
+                <span class="badge-tag">Chave: E-mail</span>
+                <span class="badge-tag">Qualquer Valor</span>
+                <span class="badge-tag">Apoio Direto ao Desenvolvedor</span>
+              </div>
+
+              <div class="sac-box">
+                <span class="sac-label">💬 Dúvidas, sugestões ou suporte técnico?</span>
+                <p>Fale diretamente com o desenvolvedor no SAC: <a href="mailto:danilobavi.dev@gmail.com" class="sac-link">danilobavi.dev@gmail.com</a></p>
+              </div>
+            </div>
+            <div class="pix-qrcode-col">
+              <p class="pix-hint">Ou leia o QR Code para fazer uma doação:</p>
+              <div class="pix-qrcode-frame">
+                <img src="qrcode-pix.jpg" alt="QR Code PIX para doações" class="pix-qrcode-image">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CADASTRAR / EDITAR IMPRESSORA -->
+    <div id="modal-printer" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 id="modal-printer-title">Cadastrar Nova Impressora</h3>
+          <button type="button" id="btn-close-modal" class="btn-icon">&times;</button>
+        </div>
+        <form id="form-printer">
+          <input type="hidden" id="modal-printer-id" value="">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="modal-printer-name">Nome da Impressora / Apelido *</label>
+              <input type="text" id="modal-printer-name" placeholder="Ex: Creality Ender 3 V3, Bambu Lab P1S..." required>
+            </div>
+            <div class="form-group">
+              <label for="modal-printer-brand">Marca / Fabricante</label>
+              <input type="text" id="modal-printer-brand" placeholder="Ex: Creality, Bambu Lab, Anycubic">
+            </div>
+            <div class="form-group">
+              <label for="modal-printer-power">Potência Média (Watts) *</label>
+              <div class="input-suffix">
+                <input type="number" id="modal-printer-power" min="10" step="10" required>
+                <span class="suffix">Watts</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="modal-printer-cost">Valor Pago na Máquina (R$) *</label>
+              <div class="input-prefix">
+                <span class="prefix">R$</span>
+                <input type="number" id="modal-printer-cost" min="0" step="50" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="modal-printer-lifespan">Vida Útil Estimada (Horas) *</label>
+              <div class="input-suffix">
+                <input type="number" id="modal-printer-lifespan" min="500" step="500" required>
+                <span class="suffix">horas</span>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label for="modal-printer-maintenance">Estimativa de Peças & Manutenção (R$)</label>
+              <div class="input-prefix">
+                <span class="prefix">R$</span>
+                <input type="number" id="modal-printer-maintenance" min="0" step="50" placeholder="0">
+              </div>
+              <small class="hint">Bicos, correias, tubos, PEI e lubrificantes ao longo da vida útil.</small>
+            </div>
+            <div class="form-group full-width modal-calc-preview">
+              <div class="preview-deprec-row">
+                <span>Taxa de Depreciação Calculada:</span>
+                <strong id="modal-preview-deprec">R$ 0,68 / hora</strong>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label for="modal-printer-notes">Observações da Máquina (Opcional)</label>
+              <input type="text" id="modal-printer-notes" placeholder="Ex: Bico 0.4mm latão, Mesa Texturizada PEI">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar Impressora</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Mensagem copiada com sucesso!</div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p class="footer-title">PrintCost D3D ® Todos os direitos reservados • Danilo Barbosa Vieira</p>
+      <p class="footer-sub">Software Profissional de Engenharia, Precificação & Gestão de Impressão 3D</p>
+      <p class="footer-sac">
+        📩 <strong>SAC & Atendimento:</strong> <a href="mailto:danilobavi.dev@gmail.com" class="sac-link">danilobavi.dev@gmail.com</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
